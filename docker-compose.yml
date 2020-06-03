@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+  sticker-db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: sticker
+      MYSQL_ROOT_PASSWORD: St1cKe2_pAssW0rd
+    volumes:
+      - mydata:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - sticker
+
+  sticker-core:
+    image: core
+    restart: always
+    build:
+      context: "."
+      dockerfile: "core.Dockerfile"
+    volomes:
+      - ./data/:/data
+    depends_on:
+      - sticker-db
+    networks:
+      - sticker
+
+  sticker-clientapp:
+    image: clientapp
+    restart: always
+    build:
+      context: "."
+      dockerfile: "clientapp.Dockerfile"
+    networks:
+      - sticker
+
+  sticker-nginx:
+    image: nginx:stable
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginxconf/:/etc/nginx/conf.d
+      - ./data/:/app/data
+    networks:
+      - sticker
+    depends_on:
+      - sticker-db
+      - sticker-core
+      - sticker-clientapp
+
+volumes:
+  mydata:
+
+networks:
+  sticker:
